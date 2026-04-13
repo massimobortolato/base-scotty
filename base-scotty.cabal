@@ -8,11 +8,14 @@ build-type:      Simple
 extra-doc-files: CHANGELOG.md
 
 common warnings
-  ghc-options: -Wall -Wno-type-defaults -threaded
+  ghc-options: -Wall -threaded
 
 library
   import:           warnings
-  exposed-modules:  Scotty
+  exposed-modules:
+    Database
+    Scotty
+    Types
 
   -- other-modules:
   -- other-extensions:
@@ -22,9 +25,12 @@ library
     , ginger2
     , mtl
     , random
+    , regex-tdfa
     , scotty
     , text
+    , time
     , unliftio-core
+    , uuid
 
   hs-source-dirs:   src
   default-language: GHC2024
@@ -34,9 +40,10 @@ executable hs-playground
   main-is:          Main.hs
   build-depends:
     , aeson
-    , base           ^>=4.21.0.0
+    , base                   ^>=4.21.0.0
     , base-scotty
     , scotty
+    , wai-middleware-static
 
   hs-source-dirs:   app
   default-language: GHC2024

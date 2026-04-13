@@ -2,31 +2,37 @@
 
 module Main where
 
-import Data.Aeson
+import Database
+import Network.Wai.Middleware.Static
 import Scotty
 import Web.Scotty.Trans
 
 -------------------------------------------------------------------------------
 main :: IO ()
-main =
+main = do
   scotty
     ScottyParams
       { port = 3000
       , templatePath = "templates"
+      , db = NoDatabase
+      , isDebug = True
       }
     $ do
-      get "/" $
-        let
-          obj =
-            object
-              [ "user"
-                  .= object
-                    [ "name" .= "massimo"
-                    , "age" .= 44
-                    ]
-              ]
-         in
-          ginger "index.html" obj
+      middleware $ staticPolicy (noDots >-> addBase "static")
 
-      get "/simple" $
-        ginger_ "simple.html"
+      get "/" $
+        ginger_ "index.html"
+
+-- get "/:page" $ do
+--   page <- pathParam "page"
+--   ctx <- readAllContexts -- readContext page
+--   ginger ("/pages" </> page <> ".html") ctx
+
+-- post "/api/login" $ do
+--   email <- formParam "email"
+--   password <- formParam "password"
+--   withLogin
+--     email
+--     password
+--     (ginger "/pages/login.html" $ object ["error_message" .= "Username o password errati"])
+--     (redirect "/")
