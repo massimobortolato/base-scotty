@@ -21,18 +21,12 @@ main = do
       middleware $ staticPolicy (noDots >-> addBase "static")
 
       get "/" $
-        ginger_ "index.html"
+        redirect "/login"
 
--- get "/:page" $ do
---   page <- pathParam "page"
---   ctx <- readAllContexts -- readContext page
---   ginger ("/pages" </> page <> ".html") ctx
+      get "/favicon.ico" $ do
+        setHeader "Content-Type" "image/x-icon"
+        file "static/img/quick.ico"
 
--- post "/api/login" $ do
---   email <- formParam "email"
---   password <- formParam "password"
---   withLogin
---     email
---     password
---     (ginger "/pages/login.html" $ object ["error_message" .= "Username o password errati"])
---     (redirect "/")
+      get "/:page" $ do
+        page <- pathParam "page"
+        ginger_ (page <> ".html")

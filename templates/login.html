@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Sign in{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center vh-100 sans">
+    <div class="card shadow" style="width: 22rem;">
+        <div class="card-body">
+            <h3 class="card-title text-center mb-4">Login</h3>
+            <form action="/api/login" method="post">
+                <div class="mb-3"><label for="email" class="form-label">Indirizzo email</label><input type="email"
+                        class="form-control" id="email" placeholder="La tua email" required="required" name="email">
+                </div>
+                <div class="mb-3"><label for="password" class="form-label">Password</label><input type="password"
+                        class="form-control" id="password" placeholder="Digita la password" required="required"
+                        name="password">
+                </div>
+                {% if content is defined %}
+                {% if content.error_message %}
+                <div id="message" class="text-danger mb-3">{{ content.error_message }}</div>
+                {% endif %}
+                {% endif %}
+                <input type="hidden" name="lang" value="it">
+                <div class="d-grid"><button type="submit" class="btn btn-primary">Login</button></div>
+            </form>
+            <p class="text-center mt-3"><a href="/password-recovery">Password dimenticata?</a></p>
+            <p class="text-center mt-3"><a href="/signup">Non hai un account? Registrati</a></p>
+            <!-- <p class="text-center mt-3"><a href="/logintoken">Login con token</a></p> -->
+        </div>
+    </div>
+</div>
+{% endblock %}

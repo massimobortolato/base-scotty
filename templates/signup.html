@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container d-flex justify-content-center align-items-center vh-100 sans">
+    <div class="card shadow" style="width: 22rem;">
+        <div class="card-body">
+            <h3 class="card-title text-center mb-4">Registrati</h3>
+            <form action="/api/signup" method="post">
+                <div class="mb-3">
+                    <label for="fullname" class="form-label">Nome completo</label>
+                    <input type="text" class="form-control" id="fullname" placeholder="Il tuo nome completo"
+                        required="required" name="fullname" aria-label="Nome completo">
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Indirizzo email</label>
+                    <input type="email" class="form-control" id="email" placeholder="La tua email" required="required"
+                        name="email" aria-label="Indirizzo email">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" placeholder="Digita la password"
+                        required="required" name="password" aria-label="Password">
+                </div>
+                <div class="mb-3">
+                    <label for="confirm-password" class="form-label">Conferma Password</label>
+                    <input type="password" class="form-control" id="confirm-password" placeholder="Conferma la password"
+                        required="required" name="confirm-password" aria-label="Conferma Password">
+                </div>
+                {% if content is defined %}
+                {% if content.error_message %}
+                <div id="message" class="text-danger mb-3">{{ content.error_message }}</div>
+                {% endif %}
+                {% endif %}
+                <input type="hidden" name="lang" value="it">
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">Registrati</button>
+                </div>
+            </form>
+            <p class="text-center mt-3"><a href="/login">Hai già un account? Accedi</a></p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

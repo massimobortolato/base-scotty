@@ -1,0 +1,109 @@
+/* baloo-bhaijaan-2-regular - latin */
+@font-face {
+  font-display: swap;
+  font-family: 'Baloo Bhaijaan 2';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/baloo-bhaijaan-2-v19-latin-regular.woff2') format('woff2');
+}
+
+/* baloo-bhaijaan-2-500 - latin */
+@font-face {
+  font-display: swap;
+  font-family: 'Baloo Bhaijaan 2';
+  font-style: normal;
+  font-weight: 500;
+  src: url('/fonts/baloo-bhaijaan-2-v19-latin-500.woff2') format('woff2');
+}
+
+/* baskervville-regular - latin */
+@font-face {
+  font-display: swap;
+  font-family: 'Baskervville';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/baskervville-v16-latin-regular.woff2') format('woff2');
+}
+
+
+body {
+  height: 100vh;
+  font-family: "Baskervville", serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 1.3em;
+}
+
+.sans {
+  font-family: "Baloo Bhaijaan 2", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+}
+
+.avatar-1 {
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-top: 2em;
+}
+
+.avatar-2 {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-top: 2em;
+}
+
+.name {
+  font-family: "Baloo Bhaijaan 2", serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-size: 2em;
+  margin-top: 1em;
+}
+
+.limited {
+  max-width: 700px;
+}
+
+.job-title {
+  font-family: "Baloo Bhaijaan 2", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-size: 1.2em;
+  color: rgb(255, 165, 30);
+}
+
+.uuid {
+  font-family: "Baloo Bhaijaan 2", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-size: 1.3em;
+  color: rgb(61, 61, 61);
+}
+
+.text-black {
+  color: rgb(51, 51, 51);
+}
+
+.navbar a {
+  text-decoration: none;
+  font-family: "Baloo Bhaijaan 2", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  color: rgb(51, 51, 51);
+}
+
+.description {
+  margin-top: 2em;
+}
+
+img {
+  border-radius: 5px;
+}
+
+a {
+  text-decoration: none;
+}

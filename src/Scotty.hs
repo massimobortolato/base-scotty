@@ -109,7 +109,7 @@ scotty ScottyParams{port, templatePath, db, isDebug} app = do
         Ginger.ginger
           (Ginger.fileLoader templatePath)
           Ginger.defPOptions
-          Ginger.DialectJinja2
+          Ginger.DialectGinger2
           rnd
           Ginger.htmlEncoder
           (pack filePath)
