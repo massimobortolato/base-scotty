@@ -27,10 +27,8 @@
                     <input type="password" class="form-control" id="confirm-password" placeholder="Conferma la password"
                         required="required" name="confirm-password" aria-label="Conferma Password">
                 </div>
-                {% if content is defined %}
-                {% if content.error_message %}
-                <div id="message" class="text-danger mb-3">{{ content.error_message }}</div>
-                {% endif %}
+                {% if error_message is defined %}
+                <div id="message" class="text-danger mb-3">{{ error_message }}</div>
                 {% endif %}
                 <input type="hidden" name="lang" value="it">
                 <div class="d-grid">

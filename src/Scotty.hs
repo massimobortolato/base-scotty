@@ -1,73 +1,74 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE MultilineStrings #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoFieldSelectors #-}
 
+-- {-# LANGUAGE OverloadedStrings #-}
+
 module Scotty (
-  ScottyParams (..),
+  AppParams (..),
   AppError (..),
   ActionM,
   ScottyM,
-  SignupError (..),
+  AppSession,
   ginger,
   ginger_,
   scotty,
   withSignup,
   withLogin,
+  withSession,
 )
 where
 
 import Control.Exception (Exception)
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
-import Data.Aeson (Result (Error, Success), Value, fromJSON, object, (.=))
-import Data.Text (Text, pack)
+import Data.Aeson (Value, object)
+import Data.ByteString (ByteString)
 import Data.Text qualified as T (length, null)
+import Data.Text.Encoding qualified as T (decodeUtf8, encodeUtf8)
 import Data.Text.Lazy (fromStrict)
-import Types
-import Database
-import Language.Ginger qualified as Ginger
+import Database qualified as DB
+import Session (SessionConfig (sessionAliveTime))
+import Session qualified as S
 import System.Random (StdGen, newStdGen)
-import Text.Regex.TDFA ((=~))
+import Types
+import Utils qualified as U
 import Web.Scotty.Trans (ActionT, ScottyT, html, scottyT, throw)
-import Web.Scotty.Session
 
 -------------------------------------------------------------------------------
-data SignupError
+type HashSalt = ByteString
+
+type AppSessionJar = S.SessionJar User
+type AppSession = S.Session User
+
+-------------------------------------------------------------------------------
+data AppError
   = PasswordMismatch
   | WeakPassword
   | InvalidEmail
   | InvalidFullname
   | UserAlreadyExists
-  deriving (Show)
+  | HashError
+  | InvalidCredentials
+  | GingerError String
+  deriving (Show, Eq)
+
+instance Exception AppError
 
 -------------------------------------------------------------------------------
-data SessionPayload = SessionPayload
-  { userId :: UserId
-  , csrfToken :: Text
-  }
-
--------------------------------------------------------------------------------
-data ScottyParams = ScottyParams
+data AppParams = AppParams
   { port :: Int
   , templatePath :: FilePath
-  , db :: Database
-  , isDebug :: Bool
+  , db :: DB.Database
+  , hashSalt :: HashSalt
   }
 
 -------------------------------------------------------------------------------
 data AppData = AppData
-  { gingerFunc :: FilePath -> Value -> ActionM ()
-  , jar :: SessionJar SessionPayload
-  , db :: Database
+  { ginger :: FilePath -> Value -> ActionM ()
+  , hasher :: Password -> Maybe PasswordHash
+  , jar :: AppSessionJar
+  , db :: DB.Database
   }
-
--------------------------------------------------------------------------------
-data AppError
-  = AppValueError String
-  | AppTemplateError String
-  deriving (Show)
-instance Exception AppError
 
 -------------------------------------------------------------------------------
 newtype AppM a = AppM
@@ -82,70 +83,77 @@ type ScottyM = ScottyT AppM
 -------------------------------------------------------------------------------
 ginger :: FilePath -> Value -> ActionM ()
 ginger filePath value = do
-  AppData{gingerFunc} <- ask
-  gingerFunc filePath value
+  AppData{ginger = g} <- ask
+  g filePath value
 
 -------------------------------------------------------------------------------
 ginger_ :: FilePath -> ActionM ()
 ginger_ filePath = ginger filePath $ object []
 
 -------------------------------------------------------------------------------
-scotty :: ScottyParams -> ScottyM () -> IO ()
-scotty ScottyParams{port, templatePath, db, isDebug} app = do
+scotty :: AppParams -> ScottyM () -> IO ()
+scotty AppParams{port, templatePath, db, hashSalt} app = do
   rnd <- newStdGen
-  jar' <- createSessionJar
-  scottyT port (runInIO rnd db jar') app
+  jar <- S.createSessionJar S.SessionConfig{sessionExpireTime = S.Seconds 3600, sessionAliveTime = S.Seconds 60}
+  scottyT port (runInIO rnd jar) app
  where
-  runInIO :: StdGen -> Database -> SessionJar SessionPayload -> AppM a -> IO a
-  runInIO rnd db' jar' AppM{runAppM} = runReaderT runAppM AppData{gingerFunc = gingerFunc rnd, db = db', jar = jar'}
-  gingerFunc :: StdGen -> FilePath -> Value -> ActionM ()
-  gingerFunc rnd filePath value =
-    case fromJSON value of
-      Error err ->
-        if isDebug
-          then gingerFunc rnd "ginger_error.html" (object ["message" .= ("Error parsing template data: " ++ err)])
-          else throw $ AppValueError err
-      Success maps ->
-        Ginger.ginger
-          (Ginger.fileLoader templatePath)
-          Ginger.defPOptions
-          Ginger.DialectGinger2
-          rnd
-          Ginger.htmlEncoder
-          (pack filePath)
-          maps
-          >>= \case
-            Left err ->
-              if isDebug
-                then gingerFunc rnd "ginger_error.html" (object ["message" .= ("Error rendering template: " ++ show err)])
-                else throw $ AppTemplateError (show err)
-            Right (Ginger.Encoded page) -> html $ fromStrict page
+  runInIO :: StdGen -> AppSessionJar -> AppM a -> IO a
+  runInIO rnd jar AppM{runAppM} =
+    runReaderT
+      runAppM
+      AppData
+        { ginger = g rnd templatePath
+        , hasher = fmap (PasswordHash . T.decodeUtf8) . U.hashPassword hashSalt . T.encodeUtf8
+        , db = db
+        , jar = jar
+        }
+  g rnd tpath fpath v = do
+    res <- liftIO $ U.ginger rnd tpath fpath v
+    case res of
+      Left err -> throw $ GingerError err
+      Right page -> html $ fromStrict page
 
 -------------------------------------------------------------------------------
-withSignup :: Text -> Email -> Password -> Password -> (SignupError -> ActionM ()) -> ActionM () -> ActionM ()
+withSignup :: Fullname -> Email -> Password -> Password -> (AppError -> ActionM ()) -> ActionM () -> ActionM ()
 withSignup fullname email password confirm_password onError onSuccess
   | password /= confirm_password = onError PasswordMismatch
   | T.length password < 8 = onError WeakPassword
-  | not isValidEmail = onError InvalidEmail
+  | not (U.isValidEmail email) = onError InvalidEmail
   | T.null fullname = onError InvalidFullname
   | otherwise = do
-      AppData{db} <- ask
-      userId <- liftIO $ createUser db User{userId = undefined, email = email, fullname = fullname, createdAt = undefined, lastLoginAt = Nothing} password
-      case userId of
-        Nothing -> onError UserAlreadyExists
-        Just _ -> onSuccess
- where
-  isValidEmail :: Bool
-  isValidEmail =
-    email =~ regex
-   where
-    regex = "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$" :: Text
+      AppData{db, jar, hasher} <- ask
+      let maybeHash = hasher password
+      case maybeHash of
+        Nothing -> onError HashError
+        Just passwordHash -> do
+          maybeUser <- liftIO $ DB.createUser db email fullname passwordHash
+          case maybeUser of
+            Nothing -> onError UserAlreadyExists
+            Just user -> do
+              _ <- S.createSession jar user
+              onSuccess
 
 -------------------------------------------------------------------------------
-withLogin :: Email -> Password -> ActionM () -> ActionM () -> ActionM ()
+withLogin :: Email -> Password -> (AppError -> ActionM ()) -> (User -> ActionM ()) -> ActionM ()
 withLogin email password onError onSuccess = do
-  AppData{db} <- ask
-  userId <- liftIO $ isUser db email password
-  case userId of
-    Nothing -> onError
-    Just _ -> onSuccess
+  AppData{db, hasher} <- ask
+  let maybeHash = hasher password
+  case maybeHash of
+    Nothing -> onError HashError
+    Just passwordHash -> do
+      maybeUser <- liftIO $ DB.getUser db email passwordHash
+      case maybeUser of
+        Just user -> do
+          AppData{jar} <- ask
+          _ <- S.createSession jar user
+          onSuccess user
+        Nothing -> onError InvalidCredentials
+
+-------------------------------------------------------------------------------
+withSession :: ActionM () -> (AppSession -> ActionM ()) -> ActionM ()
+withSession onNoSession onSession = do
+  AppData{jar} <- ask
+  eitherSession <- S.getSession jar
+  case eitherSession of
+    Left _ -> onNoSession
+    Right session -> onSession session

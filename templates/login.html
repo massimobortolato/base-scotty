@@ -15,10 +15,8 @@
                         class="form-control" id="password" placeholder="Digita la password" required="required"
                         name="password">
                 </div>
-                {% if content is defined %}
-                {% if content.error_message %}
-                <div id="message" class="text-danger mb-3">{{ content.error_message }}</div>
-                {% endif %}
+                {% if error_message is defined %}
+                <div id="message" class="text-danger mb-3">{{ error_message }}</div>
                 {% endif %}
                 <input type="hidden" name="lang" value="it">
                 <div class="d-grid"><button type="submit" class="btn btn-primary">Login</button></div>
