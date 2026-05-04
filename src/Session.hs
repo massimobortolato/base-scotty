@@ -104,10 +104,15 @@ getSession' sessionJar token' = do
         Nothing -> pure $ Left SessionNotFound
         Just sess -> do
             now <- liftIO getCurrentTime
-            if not (stillValid now sess) || (ipAddress sess /= ip)
+            if not (stillValid now sess)
+                -- \|| (ipAddress sess /= ip)
                 then deleteSession sessionJar (token sess) >> pure (Left SessionExpired)
                 else do
-                    let sess' = sess{expirationAliveTime = addUTCTime (fromSessionTime $ sessionAliveTime (config sessionJar)) now}
+                    let sess' =
+                            sess
+                                { expirationAliveTime = addUTCTime (fromSessionTime $ sessionAliveTime (config sessionJar)) now
+                                , ipAddress = ip
+                                }
                     liftIO $ addSession' sessionJar sess'
                     pure $ Right sess'
 
@@ -121,7 +126,7 @@ deleteSession sessionJar token =
 
 stillValid :: UTCTime -> Session a -> Bool
 stillValid now Session{expirationTime, expirationAliveTime} =
-    expirationTime > now || expirationAliveTime > now
+    expirationTime > now && expirationAliveTime > now
 
 {- | Retrieves the current user's session based on the "sess_id" cookie.
 | pures `Left SessionStatus` if the session is expired or does not exist.

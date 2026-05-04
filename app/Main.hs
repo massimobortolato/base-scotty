@@ -29,9 +29,9 @@ main = do
       get "/" $
         withSession
           (redirect "/login")
-          ( \S.Session{content = user, expirationAliveTime, expirationTime} -> do
+          ( \S.Session{content = user, expirationAliveTime, expirationTime, ipAddress} -> do
               t <- liftIO getCurrentTime
-              ginger "index.html" $ object ["user" .= user, "expires" .= expirationAliveTime, "expires2" .= expirationTime, "now" .= t]
+              ginger "index.html" $ object ["user" .= user, "expires" .= expirationAliveTime, "expires2" .= expirationTime, "now" .= t, "ip" .= show ipAddress]
           )
 
       get "/favicon.ico" $ do
