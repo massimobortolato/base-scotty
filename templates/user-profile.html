@@ -1,0 +1,27 @@
+{% extends "base_bar.html" %}
+
+{% block content %}
+<div class="card mt-4">
+    <div class="card-body">
+        <h4 class="card-title mb-4">User Profile</h4>
+        <table class="table table-borderless">
+            <tr>
+                <th style="width: 200px;">Full Name</th>
+                <td>{{ user.fullname }}</td>
+            </tr>
+            <tr>
+                <th>Email</th>
+                <td>{{ user.email }}</td>
+            </tr>
+            <tr>
+                <th>Created</th>
+                <td>{{ user.createdAt }}</td>
+            </tr>
+            <tr>
+                <th>Last Login</th>
+                <td>{{ user.lastLoginAt }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endblock %}

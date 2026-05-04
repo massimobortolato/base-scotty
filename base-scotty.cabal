@@ -27,6 +27,7 @@ library
     , bytestring
     , crypton
     , ginger2
+    , http-types
     , mtl
     , network
     , random
@@ -53,6 +54,7 @@ executable tempo-app
     , aeson
     , base                   ^>=4.21.2.0
     , base-scotty
+    , http-types
     , scotty
     , text
     , time

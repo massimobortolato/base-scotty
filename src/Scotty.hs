@@ -20,7 +20,7 @@ module Scotty (
 where
 
 import Control.Concurrent (threadDelay)
-import Control.Exception (Exception)
+import Control.Exception (Exception, SomeException (SomeException))
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.Aeson (Value, object)
@@ -29,12 +29,13 @@ import Data.Text qualified as T (length, null)
 import Data.Text.Encoding qualified as T (decodeUtf8, encodeUtf8)
 import Data.Text.Lazy (fromStrict)
 import Database qualified as DB
+import Network.HTTP.Types.Status (status404)
 import Session (SessionConfig (sessionAliveTime))
 import Session qualified as S
 import System.Random (StdGen, newStdGen)
 import Types
 import Utils qualified as U
-import Web.Scotty.Trans (ActionT, ScottyT, html, scottyT, throw)
+import Web.Scotty.Trans (ActionT, ScottyT, catch, html, scottyT, status, throw)
 
 -------------------------------------------------------------------------------
 type HashSalt = ByteString
@@ -86,8 +87,14 @@ type ScottyM = ScottyT AppM
 -------------------------------------------------------------------------------
 ginger :: FilePath -> Value -> ActionM ()
 ginger filePath value = do
-  AppData{ginger = g} <- ask
-  g filePath value
+  catch
+    ( do
+        AppData{ginger = g} <- ask
+        g filePath value
+    )
+    $ \(SomeException _) -> do
+      status status404
+      ginger_ "404.html"
 
 -------------------------------------------------------------------------------
 ginger_ :: FilePath -> ActionM ()

@@ -6,6 +6,7 @@ import Data.Aeson
 import Data.Time.Clock (getCurrentTime)
 import Database
 import Languages
+import Network.HTTP.Types.Status (status404)
 import Network.Wai.Middleware.Static
 import Scotty
 import Session (Session (expirationAliveTime))
@@ -37,6 +38,14 @@ main = do
       get "/favicon.ico" $ do
         setHeader "Content-Type" "image/x-icon"
         file "static/img/quick.ico"
+
+      get "/sess/:page" $ do
+        page <- pathParam "page"
+        withSession
+          (redirect "/")
+          ( \S.Session{content = user, ipAddress} ->
+              ginger (page <> ".html") $ object ["user" .= user, "ip" .= show ipAddress]
+          )
 
       get "/:page" $ do
         page <- pathParam "page"
@@ -71,3 +80,7 @@ main = do
           confirmPassword
           ko
           ok
+
+      notFound $ do
+        status status404
+        ginger_ "404.html"
