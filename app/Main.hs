@@ -50,6 +50,12 @@ main = do
         password <- formParam "password"
         withLogin email password ko ok
 
+      post "/api/logout" $ do
+        let
+          ko _err = redirect "/"
+          ok = redirect "/"
+        withLogout ko ok
+
       post "/api/signup" $ do
         let
           ko err = ginger "signup.html" $ object ["error_message" .= show (ShowAppError err)]

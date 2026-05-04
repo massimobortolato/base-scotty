@@ -5,6 +5,8 @@ module Database (
   openSQLiteDatabase,
   createUser,
   getUser,
+  loginUser,
+  deleteUser,
 )
 where
 
@@ -70,6 +72,27 @@ getUser (SQliteDatabase pool) email (PasswordHash passwordHash) = do
     case results of
       [SQLiteUser user] -> pure $ Just user
       _ -> pure Nothing
+
+---------------------------------------------------------------------------------------------------
+loginUser :: Database -> UserId -> IO Bool
+loginUser (SQliteDatabase pool) userId = do
+  withResource pool $ \conn -> do
+    t <- getCurrentTime
+    SQLite.execute
+      conn
+      "UPDATE users SET last_login_at = ? WHERE id = ?"
+      (t, UUID.toText userId)
+    pure True
+
+---------------------------------------------------------------------------------------------------
+deleteUser :: Database -> UserId -> IO Bool
+deleteUser (SQliteDatabase pool) userId = do
+  withResource pool $ \conn -> do
+    SQLite.execute
+      conn
+      "DELETE FROM users WHERE id = ?"
+      (SQLite.Only (UUID.toText userId))
+    pure True
 
 ------------------------------------------------------------------------------------
 newtype SQLiteUser = SQLiteUser User

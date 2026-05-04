@@ -14,10 +14,12 @@ module Scotty (
   scotty,
   withSignup,
   withLogin,
+  withLogout,
   withSession,
 )
 where
 
+import Control.Concurrent (threadDelay)
 import Control.Exception (Exception)
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
@@ -49,6 +51,7 @@ data AppError
   | UserAlreadyExists
   | HashError
   | InvalidCredentials
+  | NoSession
   | GingerError String
   deriving (Show, Eq)
 
@@ -94,7 +97,7 @@ ginger_ filePath = ginger filePath $ object []
 scotty :: AppParams -> ScottyM () -> IO ()
 scotty AppParams{port, templatePath, db, hashSalt} app = do
   rnd <- newStdGen
-  jar <- S.createSessionJar S.SessionConfig{sessionExpireTime = S.Seconds 3600, sessionAliveTime = S.Seconds 60}
+  jar <- S.createSessionJar S.SessionConfig{sessionExpireTime = S.Days 1, sessionAliveTime = S.Hours 1}
   scottyT port (runInIO rnd jar) app
  where
   runInIO :: StdGen -> AppSessionJar -> AppM a -> IO a
@@ -128,10 +131,10 @@ withSignup fullname email password confirm_password onError onSuccess
         Just passwordHash -> do
           maybeUser <- liftIO $ DB.createUser db email fullname passwordHash
           case maybeUser of
-            Nothing -> onError UserAlreadyExists
-            Just user -> do
-              _ <- S.createSession jar user
-              onSuccess
+            Nothing -> liftIO (threadDelay 3_000_000) >> onError UserAlreadyExists
+            Just user ->
+              S.createSession jar user
+                >> onSuccess
 
 -------------------------------------------------------------------------------
 withLogin :: Email -> Password -> (AppError -> ActionM ()) -> (User -> ActionM ()) -> ActionM ()
@@ -143,11 +146,23 @@ withLogin email password onError onSuccess = do
     Just passwordHash -> do
       maybeUser <- liftIO $ DB.getUser db email passwordHash
       case maybeUser of
-        Just user -> do
+        Just user@User{userId} -> do
           AppData{jar} <- ask
-          _ <- S.createSession jar user
-          onSuccess user
-        Nothing -> onError InvalidCredentials
+          S.createSession jar user
+            >> liftIO (DB.loginUser db userId)
+            >> onSuccess user
+        Nothing -> liftIO (threadDelay 3_000_000) >> onError InvalidCredentials
+
+-------------------------------------------------------------------------------
+withLogout :: (AppError -> ActionM ()) -> ActionM () -> ActionM ()
+withLogout onError onSuccess = do
+  AppData{jar} <- ask
+  eitherSession <- S.getSession jar
+  case eitherSession of
+    Left _ -> onError NoSession
+    Right S.Session{token} ->
+      S.deleteSession jar token
+        >> onSuccess
 
 -------------------------------------------------------------------------------
 withSession :: ActionM () -> (AppSession -> ActionM ()) -> ActionM ()

@@ -11,5 +11,6 @@ instance Show ShowAppError where
   show (ShowAppError UserAlreadyExists) = "Un utente con questa email esiste già"
   show (ShowAppError HashError) = "Errore generico"
   show (ShowAppError InvalidCredentials) = "Email o password non validi"
+  show (ShowAppError NoSession) = "Nessuna sessione attiva"
   show (ShowAppError (GingerError _)) = "Si è verificato un errore durante il rendering della pagina"
 

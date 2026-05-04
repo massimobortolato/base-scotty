@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Tempo{% endblock %}
+
+{% block topbar %}
+<nav class="navbar navbar-expand py-2 mb-3" style="background-color: #d1dcf0; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+    <div class="container-fluid px-4">
+        <div class="d-flex w-100 align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <a href="/">
+                    <img src="/img/quick.png" alt="Tempo" style="height: 28px;">
+                    <span class="navbar-brand mb-0 h1">Tempo</span>
+                </a>
+            </div>
+            <div class="d-flex align-items-center gap-3 text-nowrap">
+                <small id="navbar-datetime"></small>
+                <i class="bi bi-gear fs-5" role="button" title="Settings"></i>
+                <div class="dropdown">
+                    <i class="bi bi-person-circle fs-5" role="button" title="User" data-bs-toggle="dropdown"
+                        aria-expanded="false"></i>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <form action="/api/logout" method="post" class="m-0">
+                                <button type="submit" class="dropdown-item">Logout</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<script>
+    function updateDateTime() {
+        const now = new Date();
+        const opts = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+        document.getElementById('navbar-datetime').textContent = now.toLocaleString('it-IT', opts);
+    }
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+</script>
+
+{% endblock %}

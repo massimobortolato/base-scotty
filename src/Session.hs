@@ -12,6 +12,7 @@ module Session (
     SessionConfig (..),
     createSessionJar,
     createSession,
+    deleteSession,
     getSession,
 ) where
 
